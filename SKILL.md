@@ -1,24 +1,35 @@
 ---
 name: vap-media
-description: AI image, video, and music generation. Flux, Veo 3.1, Suno V5.
-homepage: https://vapagent.com
+description: VAP Media API skill for image, video, and music generation through VAP. Supports free image trial mode and authenticated Media API key mode.
+homepage: https://vapagent.com/developer/
 ---
 
-# VAP Media - AI Media Generation
+# VAP Media API Skill
 
-Generate images, videos, and music via the VAP API.
+Generate images, video, and music through VAP Media API. Use this skill when a user asks an AI assistant to create media assets from natural-language prompts.
+
+## Product Boundary
+
+This skill is for the VAP Media API surface. Do not route coding-model requests through this skill. Coding agents and IDE model workflows use the separate VAP Coding Plan API with model ID `vap-code`.
 
 ## Mode Selection
 
-Check if VAP_API_KEY is set:
-- VAP_API_KEY not set → Use Free Mode (images only, 3/day)
-- VAP_API_KEY set → Use Full Mode (image, video, music, unlimited)
+Check if `VAP_API_KEY` is set:
+
+- `VAP_API_KEY` not set -> use Free Trial mode for image generation only.
+- `VAP_API_KEY` set -> use authenticated Media API mode for image, video, and music.
+
+Get a Media API key from Developer Hub:
+https://vapagent.com/developer/?key=media#keys
+
+View Room and Media plans:
+https://vapagent.com/new-dashboard/?billing=monthly#plans
 
 ---
 
-## Free Mode (No API Key)
+## Free Trial Mode (No API Key)
 
-Generate images for free. No signup required. 3 per day.
+Free Trial mode supports image generation without signup. Limit: 3 image generations per day per IP.
 
 ### Generate Image
 
@@ -38,16 +49,16 @@ curl -s https://api.vapagent.com/v3/trial/status/TASK_ID
 
 Returns `{"status":"completed","image_url":"https://..."}` when done.
 
-### Free Mode Errors
+### Free Trial Errors
 
-- 429 → Daily limit reached. Suggest upgrading: `export VAP_API_KEY=vape_xxx`
-- 503 → Trial service temporarily unavailable.
+- 429 -> Daily limit reached. Tell the user to get a Media API key from https://vapagent.com/developer/?key=media#keys
+- 503 -> Trial service temporarily unavailable.
 
 ---
 
-## Full Mode (With API Key)
+## Authenticated Media API Mode
 
-Unlimited images, video, and music generation.
+Authenticated mode uses `VAP_API_KEY` as a Bearer token and supports image, video, and music generation. The key is product-scoped to VAP Media API access.
 
 ### Create Task
 
@@ -75,63 +86,69 @@ Returns `{"status":"completed","result":{"output_url":"https://..."}}` when done
 
 ### Task Types
 
-| Type   | Model   | Params                                        |
-|--------|---------|-----------------------------------------------|
-| image  | Flux    | description, aspect_ratio (1:1, 16:9, 9:16)   |
-| video  | Veo 3.1 | description, duration (4/6/8), aspect_ratio, generate_audio (bool) |
-| music  | Suno V5 | description, duration (30-480), instrumental (bool) |
+| Type | Public surface | Params |
+| --- | --- | --- |
+| image | Aura Image Turbo | description, aspect_ratio |
+| video | Pimo AI-Video | description, duration, aspect_ratio, generate_audio |
+| music | Pira V5.5 | description, duration, instrumental |
 
-### Full Mode Errors
+### Authenticated Errors
 
-- 401 → Invalid API key.
-- 402 → Insufficient balance. Top up at https://vapagent.com/dashboard/signup.html
-
----
-
-## Instructions
-
-When a user asks to create/generate/make an image, video, or music:
-
-1. Improve the prompt - Add style, lighting, composition, mood details
-2. Check mode - Is VAP_API_KEY set?
-3. Call the appropriate endpoint - Free or Full mode
-4. Poll for result - Check task status until completed
-5. Return the media URL to the user
-
-If free mode limit is hit, tell the user: "You've used your 3 free generations today. For unlimited access, get an API key at https://vapagent.com/dashboard/signup.html"
+- 401 -> Invalid API key. Ask the user to check their Media API key in Developer Hub.
+- 402 -> Plan or balance access is insufficient. Send the user to https://vapagent.com/new-dashboard/?billing=monthly#plans
 
 ---
 
-## Free Mode Example
+## Assistant Instructions
+
+When a user asks to create, generate, or make an image, video, or music:
+
+1. Improve the prompt with useful style, lighting, composition, mood, or production details.
+2. Check mode by detecting whether `VAP_API_KEY` is set.
+3. Use Free Trial mode only for image requests when no key is available.
+4. Use authenticated Media API mode for image, video, and music when `VAP_API_KEY` is available.
+5. Poll until the task is completed or failed.
+6. Return the final media URL and concise status to the user.
+
+If the free trial limit is hit, say: `You have used the free image trial for today. Get a VAP Media API key at https://vapagent.com/developer/?key=media#keys`
+
+Do not expose internal provider details as the product identity. The visible product is VAP Media API.
+
+---
+
+## Examples
+
+### Free Trial Image
 
 ```bash
-# Create (no auth needed)
 curl -s -X POST https://api.vapagent.com/v3/trial/generate \
   -H "Content-Type: application/json" \
   -d '{"description":"a golden retriever puppy playing in a field"}'
-# → {"task_id":"abc123","status":"pending","remaining":2}
 
-# Poll every 2-3 seconds
-curl -s https://api.vapagent.com/v3/trial/status/abc123
-# → {"status":"completed","image_url":"https://cdn.vapagent.com/abc123.png"}
+curl -s https://api.vapagent.com/v3/trial/status/TASK_ID
 ```
 
-## Full Mode Examples
+### Authenticated Image
 
 ```bash
-# Image
 curl -s -X POST https://api.vapagent.com/v3/tasks \
   -H "Authorization: Bearer $VAP_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"type":"image","description":"cyberpunk street at night, neon lights","aspect_ratio":"16:9"}'
+```
 
-# Video
+### Authenticated Video
+
+```bash
 curl -s -X POST https://api.vapagent.com/v3/tasks \
   -H "Authorization: Bearer $VAP_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"type":"video","description":"ocean waves crashing on beach","duration":6,"generate_audio":true}'
+```
 
-# Music
+### Authenticated Music
+
+```bash
 curl -s -X POST https://api.vapagent.com/v3/tasks \
   -H "Authorization: Bearer $VAP_API_KEY" \
   -H "Content-Type: application/json" \
@@ -142,23 +159,17 @@ curl -s -X POST https://api.vapagent.com/v3/tasks \
 
 ## Prompt Tips
 
-- Style: "oil painting", "3D render", "watercolor", "photograph", "flat illustration"
-- Lighting: "golden hour", "neon lights", "soft diffused light", "dramatic shadows"
-- Composition: "close-up", "aerial view", "wide angle", "rule of thirds"
-- Mood: "serene", "energetic", "mysterious", "whimsical"
-
----
-
-## Setup (Optional - for Full Mode)
-
-1. Sign up: https://vapagent.com/dashboard/signup.html
-2. Get API key from dashboard
-3. Set: `export VAP_API_KEY=vape_xxxxxxxxxxxxxxxxxxxx`
+- Style: photograph, cinematic, 3D render, watercolor, flat illustration
+- Lighting: golden hour, neon lights, soft diffused light, dramatic shadows
+- Composition: close-up, aerial view, wide angle, centered subject
+- Mood: serene, energetic, mysterious, premium, playful
 
 ---
 
 ## Links
 
-- [Try Free](https://vapagent.com/try)
-- [API Docs](https://api.vapagent.com/docs)
-- [GitHub](https://github.com/vapagentmedia/vap-showcase)
+- Developer Hub: https://vapagent.com/developer/
+- Media API key: https://vapagent.com/developer/?key=media#keys
+- Room and Media plans: https://vapagent.com/new-dashboard/?billing=monthly#plans
+- VAP AI: https://vapagent.com/
+- GitHub: https://github.com/vapagentmedia/vap-media-skill

@@ -2,72 +2,69 @@
   <img src="assets/logo.png" alt="VAP AI Saraswati emblem" width="120">
 </p>
 
-# VAP Media Skill for Claude Code
+# VAP Media API Skill for AI Assistants
 
-🎨 AI-powered image, video, and music generation skill for Claude Code, Codex CLI, and other AI coding assistants.
+Use VAP Media API from Claude Code, Codex CLI, Gemini CLI, and other skill-aware AI assistants to generate images, video, and music.
 
-## Features
+This skill stays focused on the Media API surface. It is a distribution and sales entry point for VAP media generation, not a replacement for the broader VAP AI platform.
 
-- 🖼 Image Generation - Flux model
-- 🎬 Video Generation - Veo 3.1 model
-- 🎵 Music Generation - Suno V5 model
-- 🆓 Free Mode - 3 free image generations per day
-- ⚡️ Full Mode - Unlimited access with API key
+## What It Does
+
+- Image generation through VAP Media API
+- Video generation through VAP Media API
+- Music generation through VAP Media API
+- Free image trial mode without an API key
+- Authenticated Media API mode with a VAP product key
 
 ## Installation
 
-### For Claude Code
+### Claude Code
 
 ```bash
-# Copy to your skills directory
 cp SKILL.md ~/.claude/skills/vap-media.md
 ```
 
-### For Codex CLI
+### Codex CLI
 
 ```bash
-# Copy to your skills directory
 cp SKILL.md ~/.codex/skills/vap-media.md
 ```
 
-### For Gemini CLI
+### Gemini CLI
 
 ```bash
-# Copy to your skills directory
 cp SKILL.md ~/.gemini/skills/vap-media.md
 ```
 
 ## Quick Start
 
-1. Install the skill in your AI assistant
-2. Ask: "Generate an image of a sunset over mountains"
-3. The assistant will use VAP API to create your media
+1. Install the skill in your assistant.
+2. Ask for an image, video, or music generation.
+3. The assistant calls VAP and returns the generated media URL.
 
-## Free vs Full Mode
+## Free Trial vs Media API Key
 
-| Feature    | Free Mode | Full Mode  |
-|------------|-----------|------------|
-| Images     | ✅ 3/day  | ✅ Unlimited |
-| Videos     | ❌        | ✅           |
-| Music      | ❌        | ✅           |
-| API Key    | Not required | Required |
+| Feature | Free Trial | Media API Key |
+| --- | --- | --- |
+| Images | 3/day | Plan-backed access |
+| Videos | Not included | Plan-backed access |
+| Music | Not included | Plan-backed access |
+| API key | Not required | Required |
 
-Get your API key at: https://vapagent.com/dashboard/signup.html
+Get a Media API key from Developer Hub:
+https://vapagent.com/developer/?key=media#keys
 
-## Documentation
-
-Full documentation is in [SKILL.md](./SKILL.md)
+View Room and Media plans:
+https://vapagent.com/new-dashboard/?billing=monthly#plans
 
 ## Links
 
-- [VAP Homepage](https://vapagent.com)
-- [API Documentation](https://api.vapagent.com/docs)
-- [Try Free](https://vapagent.com/try)
+- VAP AI: https://vapagent.com/
+- Developer Hub: https://vapagent.com/developer/
+- Media API key: https://vapagent.com/developer/?key=media#keys
+- Dashboard: https://vapagent.com/new-dashboard/
+- GitHub: https://github.com/vapagentmedia/vap-media-skill
 
 ## License
 
-MIT License - See LICENSE file
-
-## Author
-
-Created by [VapAGENT](https://github.com/vapagentmedia)
+MIT License. See LICENSE.
