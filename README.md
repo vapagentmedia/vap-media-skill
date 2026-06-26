@@ -13,7 +13,7 @@ This skill stays focused on the Media API surface. It is a distribution and sale
 - Image generation through VAP Media API
 - Video generation through VAP Media API
 - Music generation through VAP Media API
-- Free image trial mode without an API key
+- Media editing through VAP Media API operations
 - Authenticated Media API mode with a VAP product key
 
 ## Installation
@@ -42,14 +42,14 @@ cp SKILL.md ~/.gemini/skills/vap-media.md
 2. Ask for an image, video, or music generation.
 3. The assistant calls VAP and returns the generated media URL.
 
-## Free Trial vs Media API Key
+## Media API Key
 
-| Feature | Free Trial | Media API Key |
-| --- | --- | --- |
-| Images | 3/day | Plan-backed access |
-| Videos | Not included | Plan-backed access |
-| Music | Not included | Plan-backed access |
-| API key | Not required | Required |
+| Surface | Endpoint |
+| --- | --- |
+| Generate image, video, or music | `POST /api/v1/generations` |
+| Poll generation | `GET /api/v1/generations/{id}` |
+| Edit or enhance media | `POST /api/v1/operations` |
+| Poll operation | `GET /api/v1/operations/{id}` |
 
 Get a Media API key from Developer Hub:
 https://vapagent.com/developer/?key=media#keys

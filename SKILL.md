@@ -1,25 +1,31 @@
 ---
 name: vap-media
-description: VAP Media API skill for image, video, and music generation through VAP. Supports free image trial mode and authenticated Media API key mode.
+description: VAP Media API skill for image, video, music, and media editing through VAP. Uses VAP product keys with current Media API endpoints.
 homepage: https://vapagent.com/developer/
 ---
 
 # VAP Media API Skill
 
-Generate images, video, and music through VAP Media API. Use this skill when a user asks an AI assistant to create media assets from natural-language prompts.
+Generate images, video, and music through VAP Media API. Edit and enhance media with inpaint, AI edit, upscale, background removal, video trim, and video merge.
+
+This skill is a Media API distribution surface for skill-aware AI assistants. Keep the agent workflow direct and useful: improve prompts, choose the matching VAP Media API endpoint, poll the task or operation, and return the final media URL.
 
 ## Product Boundary
 
-This skill is for the VAP Media API surface. Do not route coding-model requests through this skill. Coding agents and IDE model workflows use the separate VAP Coding Plan API with model ID `vap-code`.
+Use this skill for VAP Media API work only:
 
-## Mode Selection
+- image generation
+- video generation
+- music generation
+- media editing and enhancement
 
-Check if `VAP_API_KEY` is set:
+Do not route coding-model requests through this skill. Coding agents and IDE model workflows use the separate VAP Coding Plan API with model ID `vap-code`.
 
-- `VAP_API_KEY` not set -> use Free Trial mode for image generation only.
-- `VAP_API_KEY` set -> use authenticated Media API mode for image, video, and music.
+## Access
 
-Get a Media API key from Developer Hub:
+Use `VAP_API_KEY` as a Bearer token. This key is product-scoped to VAP Media API access.
+
+If `VAP_API_KEY` is not set, ask the user to get a Media API key from Developer Hub:
 https://vapagent.com/developer/?key=media#keys
 
 View Room and Media plans:
@@ -27,75 +33,138 @@ https://vapagent.com/new-dashboard/?billing=monthly#plans
 
 ---
 
-## Free Trial Mode (No API Key)
+## Generation
 
-Free Trial mode supports image generation without signup. Limit: 3 image generations per day per IP.
+Use `POST /api/v1/generations` for image, video, and music generation.
 
-### Generate Image
-
-```bash
-curl -s -X POST https://api.vapagent.com/v3/trial/generate \
-  -H "Content-Type: application/json" \
-  -d '{"description":"a serene mountain lake at sunset"}'
-```
-
-Returns `{"task_id":"UUID","status":"pending","remaining":2}`.
-
-### Poll Result
+### Create Generation
 
 ```bash
-curl -s https://api.vapagent.com/v3/trial/status/TASK_ID
-```
-
-Returns `{"status":"completed","image_url":"https://..."}` when done.
-
-### Free Trial Errors
-
-- 429 -> Daily limit reached. Tell the user to get a Media API key from https://vapagent.com/developer/?key=media#keys
-- 503 -> Trial service temporarily unavailable.
-
----
-
-## Authenticated Media API Mode
-
-Authenticated mode uses `VAP_API_KEY` as a Bearer token and supports image, video, and music generation. The key is product-scoped to VAP Media API access.
-
-### Create Task
-
-```bash
-curl -s -X POST https://api.vapagent.com/v3/tasks \
+curl -s -X POST https://api.vapagent.com/api/v1/generations \
   -H "Authorization: Bearer $VAP_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "type": "image",
-    "description": "a futuristic cityscape at night",
-    "aspect_ratio": "16:9"
-  }'
+  -d '{"kind":"image","prompt":"PROMPT","params":{"aspect_ratio":"1:1"}}'
 ```
 
-Returns `{"task_id":"UUID","status":"pending","estimated_cost":"0.1800"}`.
+Returns a task id:
 
-### Poll Result
+```json
+{"generation_id":"UUID","task_id":"UUID","status":"pending","kind":"image"}
+```
+
+### Poll Generation
 
 ```bash
-curl -s https://api.vapagent.com/v3/tasks/TASK_ID \
+curl -s https://api.vapagent.com/api/v1/generations/GENERATION_ID \
   -H "Authorization: Bearer $VAP_API_KEY"
 ```
 
-Returns `{"status":"completed","result":{"output_url":"https://..."}}` when done.
+When complete, return the media URL from `result_url`, `image_url`, `video_url`, `audio_url`, or the primary URL inside `result`.
 
-### Task Types
+### Generation Types And Params
 
-| Type | Public surface | Params |
+#### Image
+
+```json
+{
+  "kind": "image",
+  "prompt": "A clean product photo of a violet-white AI media emblem on a studio desk",
+  "params": {
+    "aspect_ratio": "1:1"
+  }
+}
+```
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| `aspect_ratio` | enum | `1:1` | `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `21:9`, `9:21` |
+| `width` | int | optional | Target width when supported |
+| `height` | int | optional | Target height when supported |
+| `negative_prompt` | string | optional | What to avoid |
+| `output_format` | string | optional | Requested output format when supported |
+| `quantity` | int | optional | Number of images when supported |
+
+#### Video
+
+```json
+{
+  "kind": "video",
+  "prompt": "Drone shot over misty mountains at sunrise",
+  "params": {
+    "duration": 8,
+    "aspect_ratio": "9:16",
+    "resolution": "1080p"
+  }
+}
+```
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| `duration` | int | `8` | `4`, `6`, or `8` seconds |
+| `aspect_ratio` | enum | `16:9` | `16:9` landscape or `9:16` portrait |
+| `generate_audio` | bool | `true` | Include audio track |
+| `resolution` | enum | `720p` | `720p` or `1080p` |
+| `negative_prompt` | string | optional | What to avoid |
+| `source_image` | string | optional | Input image URL for image-to-video when supported |
+
+#### Music
+
+```json
+{
+  "kind": "music",
+  "prompt": "Upbeat lo-fi hip hop beat, warm vinyl crackle, chill atmosphere",
+  "params": {
+    "duration": 120,
+    "instrumental": true,
+    "audio_format": "mp3"
+  }
+}
+```
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| `duration` | int | `120` | 30-480 seconds |
+| `instrumental` | bool | `false` | No vocals |
+| `audio_format` | enum | `mp3` | `mp3` or `wav` |
+| `loudness_preset` | enum | `streaming` | `streaming`, `apple`, or `broadcast` |
+| `style` | string | optional | Genre/style |
+| `title` | string | optional | Song title |
+| `custom_mode` | bool | `false` | Enable custom lyrics and style mode |
+
+---
+
+## Operations
+
+Use `POST /api/v1/operations` for edit and enhancement operations.
+
+### Create Operation
+
+```bash
+curl -s -X POST https://api.vapagent.com/api/v1/operations \
+  -H "Authorization: Bearer $VAP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"background_remove","media_url":"https://example.com/photo.png"}'
+```
+
+### Poll Operation
+
+```bash
+curl -s https://api.vapagent.com/api/v1/operations/OPERATION_ID \
+  -H "Authorization: Bearer $VAP_API_KEY"
+```
+
+When complete, return the media URL from `result_url`, `image_url`, `video_url`, or the primary URL inside `result`.
+
+### Available Operations
+
+| Operation | Required Params | Description |
 | --- | --- | --- |
-| image | Aura Image Turbo | description, aspect_ratio |
-| video | Pimo AI-Video | description, duration, aspect_ratio, generate_audio |
-| music | Pira V5.5 | description, duration, instrumental |
-
-### Authenticated Errors
-
-- 401 -> Invalid API key. Ask the user to check their Media API key in Developer Hub.
-- 402 -> Plan or balance access is insufficient. Send the user to https://vapagent.com/new-dashboard/?billing=monthly#plans
+| `inpaint` | `media_url`, `prompt` | AI editing with optional `mask_url` |
+| `ai_edit` | `media_url`, `prompt` | AI-powered image editing with optional `additional_images` |
+| `background_remove` | `media_url` | Remove background |
+| `upscale` | `media_url` | Enhance resolution with `options.scale`: 2 or 4 |
+| `video_trim` | `media_url`, `options.start_time`, `options.end_time` | Trim video |
+| `video_merge` | `media_urls` array, min 2 | Merge video clips |
 
 ---
 
@@ -104,13 +173,22 @@ Returns `{"status":"completed","result":{"output_url":"https://..."}}` when done
 When a user asks to create, generate, or make an image, video, or music:
 
 1. Improve the prompt with useful style, lighting, composition, mood, or production details.
-2. Check mode by detecting whether `VAP_API_KEY` is set.
-3. Use Free Trial mode only for image requests when no key is available.
-4. Use authenticated Media API mode for image, video, and music when `VAP_API_KEY` is available.
-5. Poll until the task is completed or failed.
-6. Return the final media URL and concise status to the user.
+2. Require `VAP_API_KEY`; if it is missing, send the user to Developer Hub for a Media API key.
+3. Submit `POST /api/v1/generations` with top-level `kind`, top-level `prompt`, and optional `params`.
+4. Set aspect ratio based on the content need:
+   - portrait/social -> `9:16`
+   - YouTube/web/widescreen -> `16:9`
+   - square feed asset -> `1:1`
+5. Poll `GET /api/v1/generations/{id}` until completed or failed.
+6. Return the final media URL to the user with concise status.
 
-If the free trial limit is hit, say: `You have used the free image trial for today. Get a VAP Media API key at https://vapagent.com/developer/?key=media#keys`
+When a user asks to edit, enhance, or modify an existing image or video:
+
+1. Identify the operation: `inpaint`, `ai_edit`, `upscale`, `background_remove`, `video_trim`, or `video_merge`.
+2. Get the media URL from a previous generation or user-provided URL.
+3. Submit `POST /api/v1/operations`.
+4. Poll `GET /api/v1/operations/{id}` until completed or failed.
+5. Return the output URL.
 
 Do not expose internal provider details as the product identity. The visible product is VAP Media API.
 
@@ -118,44 +196,62 @@ Do not expose internal provider details as the product identity. The visible pro
 
 ## Examples
 
-### Free Trial Image
+### Image
 
 ```bash
-curl -s -X POST https://api.vapagent.com/v3/trial/generate \
-  -H "Content-Type: application/json" \
-  -d '{"description":"a golden retriever puppy playing in a field"}'
-
-curl -s https://api.vapagent.com/v3/trial/status/TASK_ID
-```
-
-### Authenticated Image
-
-```bash
-curl -s -X POST https://api.vapagent.com/v3/tasks \
+curl -s -X POST https://api.vapagent.com/api/v1/generations \
   -H "Authorization: Bearer $VAP_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"type":"image","description":"cyberpunk street at night, neon lights","aspect_ratio":"16:9"}'
+  -d '{"kind":"image","prompt":"A fluffy orange tabby cat on a sunlit windowsill, soft bokeh, golden hour light, photorealistic","params":{"aspect_ratio":"16:9"}}'
+
+curl -s https://api.vapagent.com/api/v1/generations/GENERATION_ID \
+  -H "Authorization: Bearer $VAP_API_KEY"
 ```
 
-### Authenticated Video
+### Video
 
 ```bash
-curl -s -X POST https://api.vapagent.com/v3/tasks \
+curl -s -X POST https://api.vapagent.com/api/v1/generations \
   -H "Authorization: Bearer $VAP_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"type":"video","description":"ocean waves crashing on beach","duration":6,"generate_audio":true}'
+  -d '{"kind":"video","prompt":"Drone shot over misty mountains at sunrise","params":{"duration":8,"aspect_ratio":"9:16","resolution":"1080p"}}'
 ```
 
-### Authenticated Music
+### Music
 
 ```bash
-curl -s -X POST https://api.vapagent.com/v3/tasks \
+curl -s -X POST https://api.vapagent.com/api/v1/generations \
   -H "Authorization: Bearer $VAP_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"type":"music","description":"upbeat electronic dance music","duration":120,"instrumental":false}'
+  -d '{"kind":"music","prompt":"Upbeat lo-fi hip hop beat, warm vinyl crackle, chill vibes","params":{"duration":120,"instrumental":true,"audio_format":"wav","loudness_preset":"streaming"}}'
 ```
 
----
+### AI Edit
+
+```bash
+curl -s -X POST https://api.vapagent.com/api/v1/operations \
+  -H "Authorization: Bearer $VAP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"ai_edit","media_url":"https://example.com/photo.jpg","prompt":"Change the background to a sunset beach"}'
+```
+
+### Upscale
+
+```bash
+curl -s -X POST https://api.vapagent.com/api/v1/operations \
+  -H "Authorization: Bearer $VAP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"upscale","media_url":"https://example.com/photo.jpg","options":{"scale":4}}'
+```
+
+### Background Remove
+
+```bash
+curl -s -X POST https://api.vapagent.com/api/v1/operations \
+  -H "Authorization: Bearer $VAP_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"operation":"background_remove","media_url":"https://example.com/photo.jpg"}'
+```
 
 ## Prompt Tips
 
