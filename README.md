@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="VAP AI Saraswati emblem" width="120">
+</p>
+
 # VAP Media Skill for Claude Code
 
 🎨 AI-powered image, video, and music generation skill for Claude Code, Codex CLI, and other AI coding assistants.
